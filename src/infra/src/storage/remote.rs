@@ -309,6 +309,20 @@ fn init_aws_config(config: StorageConfig) -> object_store::Result<object_store::
     builder.build()
 }
 
+fn init_aistore_config(
+    config: StorageConfig,
+) -> object_store::Result<aistore_object_store::AiStore> {
+    let mut builder = aistore_object_store::AiStoreBuilder::default()
+        .with_bucket_name(&config.bucket_name)
+        .with_allow_http(true);
+
+    if !config.server_url.is_empty() {
+        builder = builder.with_endpoint(config.server_url.clone());
+    }
+
+    builder.build()
+}
+
 fn init_azure_config(
     config: StorageConfig,
 ) -> object_store::Result<object_store::azure::MicrosoftAzure> {
@@ -374,6 +388,12 @@ fn init_client(config: StorageConfig) -> Box<dyn object_store::ObjectStore> {
             Ok(client) => Box::new(client),
             Err(e) => {
                 panic!("gcp init config error: {e}");
+            }
+        },
+        "ais" | "aistore" => match init_aistore_config(config) {
+            Ok(client) => Box::new(client),
+            Err(e) => {
+                panic!("aistore init config error: {e}");
             }
         },
         _ => match init_aws_config(config) {
